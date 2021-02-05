@@ -17,7 +17,14 @@ let DB;
 document.addEventListener('DOMContentLoaded', () => {
     // create the database
     let TasksDB = indexedDB.open('tasks', 1);
-
+    let dayOfTheWeekMap = new Map();
+    dayOfTheWeekMap.set(1, "Mon");
+    dayOfTheWeekMap.set(2, "Tue");
+    dayOfTheWeekMap.set(3,"Wed");
+    dayOfTheWeekMap.set(4, "Thu");
+    dayOfTheWeekMap.set(5,"Fri");
+    dayOfTheWeekMap.set(6, "Sat");
+    dayOfTheWeekMap.set(7, "Sun");
     // if there's an error
     TasksDB.onerror = function() {
             console.log('There was an error');
@@ -40,10 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // create an object store, 
         // keypath is going to be the Indexes
-        let objectStore = db.createObjectStore('tasks', { keyPath: 'id', autoIncrement: true });
+        let objectStore = db.createObjectStore('tasks',{autoIncrement: true });
 
         // createindex: 1) field name 2) keypath 3) options
-        objectStore.createIndex('taskname', 'taskname', { unique: false });
+        objectStore.createIndex('dateCreated', 'dateCreated');
 
         console.log('Database ready and fields created!');
     }
@@ -61,15 +68,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // create a new object with the form info
-        let newTask = {
-            taskname: taskInput.value,
+        function Task(dateCreated, taskName) {
+            this.dateCreated = dateCreated;
+            this.taskName = taskName;
         }
+        
 
         // Insert the object into the database 
         let transaction = DB.transaction(['tasks'], 'readwrite');
         let objectStore = transaction.objectStore('tasks');
-
-        let request = objectStore.add(newTask);
+      
+        let request = objectStore.add(new Task(new Date(), taskInput.value));
 
         // on success
         request.onsuccess = () => {
@@ -107,8 +116,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 li.setAttribute('data-task-id', cursor.value.id);
                 // Adding a class
                 li.className = 'collection-item';
-                // Create text node and append it 
-                li.appendChild(document.createTextNode(cursor.value.taskname));
+                // Create text node and append it
+                 
+                li.appendChild(document.createTextNode(cursor.value.taskName));
+                // Extract The Date from the database
+                const date = document.createElement('span');
+                date.style.position = "absolute";
+                date.style.left = "50%";
+                date.style.transform = "translateX(-50%)";
+                const dateData = cursor.value.dateCreated;
+                var year = dateData.getFullYear();
+                var month = dateData.getUTCMonth() + 1;
+                var day = dateData.getUTCDate();
+                var dayOfWeek = dayOfTheWeekMap.get(dateData.getDay());
+                var localTime = dateData.toLocaleTimeString()
+                var newDate = dayOfWeek + " " +  year + "/" + month + "/" + day + " " + localTime; 
+                date.innerHTML = newDate;
+
+                li.appendChild(date);      
+                
                 // Create new element for the link 
                 const link = document.createElement('a');
                 // Add class and the x marker for a 
