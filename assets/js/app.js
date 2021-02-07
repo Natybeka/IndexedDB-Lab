@@ -4,7 +4,8 @@ const form = document.querySelector('#task-form'); //The form at the top
 const filter = document.querySelector('#filter'); //the task filter text field
 const taskList = document.querySelector('.collection'); //The UL
 const clearBtn = document.querySelector('.clear-tasks'); //the all task clear button
-
+const sortAscending = document.querySelector('#asc');
+const sortDescending = document.querySelector('#dsc');
 const reloadIcon = document.querySelector('.fa'); //the reload button at the top navigation 
 
 //DB variable 
@@ -15,6 +16,10 @@ let DB;
 
 // Add Event Listener [on Load]
 document.addEventListener('DOMContentLoaded', () => {
+    var elems = document.querySelectorAll('.dropdown-trigger');
+    M.Dropdown.init(elems, constrainWidth = false);
+
+    let dateArr = new Array();
     // create the database
     let TasksDB = indexedDB.open('tasks', 1);
     let dayOfTheWeekMap = new Map();
@@ -24,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     dayOfTheWeekMap.set(4, "Thu");
     dayOfTheWeekMap.set(5,"Fri");
     dayOfTheWeekMap.set(6, "Sat");
-    dayOfTheWeekMap.set(7, "Sun");
+    dayOfTheWeekMap.set(0, "Sun");
     // if there's an error
     TasksDB.onerror = function() {
             console.log('There was an error');
@@ -50,13 +55,54 @@ document.addEventListener('DOMContentLoaded', () => {
         let objectStore = db.createObjectStore('tasks',{autoIncrement: true });
 
         // createindex: 1) field name 2) keypath 3) options
-        objectStore.createIndex('dateCreated', 'dateCreated');
+        objectStore.createIndex('dateCreated', 'dateCreated', {unique:true});
 
         console.log('Database ready and fields created!');
     }
 
     form.addEventListener('submit', addNewTask);
+    sortAscending.addEventListener('click', sortAsc);
+    function sortAsc() {
+        dateArr = dateArr.sort();
+        console.log(dateArr);
+        let transaction = DB.transaction("tasks");
+        let objectStore = transaction.objectStore("tasks");
+        let dateIndex = objectStore.index('dateCreated');
+        //remove all items
+        while (taskList.firstChild) {
+            taskList.removeChild(taskList.firstChild);
+        }
+        dateArr.forEach(date => {
+            let request = dateIndex.get(date);
+            request.onsuccess = function() {
+                let task = request.result;
+                const li = document.createElement('li');
+                // Adding a class
+                li.className = 'collection-item';
+                // Create text node and append it
+                li.appendChild(document.createTextNode(task.taskName));
+                // Extract The Date from the database
+                const date = document.createElement('span');
+                date.style.position = "absolute";
+                date.style.left = "50%";
+                date.style.transform = "translateX(-50%)";
+                const dateData = task.dateCreated;
+                var year = dateData.getFullYear();
+                var month = dateData.getUTCMonth() + 1;
+                var day = dateData.getUTCDate();
+                var dayOfWeek = dayOfTheWeekMap.get(dateData.getDay());
+                var localTime = dateData.toLocaleTimeString()
+                var newDate = dayOfWeek + " " +  year + "/" + month + "/" + day + " " + localTime; 
+                date.innerHTML = newDate;
 
+                li.appendChild(date);      
+                taskList.appendChild(li);    
+            }
+        });
+        
+        
+
+    }
     function addNewTask(e) {
         e.preventDefault();
 
@@ -125,6 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 date.style.left = "50%";
                 date.style.transform = "translateX(-50%)";
                 const dateData = cursor.value.dateCreated;
+                dateArr.push(dateData);
                 var year = dateData.getFullYear();
                 var month = dateData.getUTCMonth() + 1;
                 var day = dateData.getUTCDate();
