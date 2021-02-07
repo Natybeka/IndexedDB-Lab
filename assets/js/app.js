@@ -11,6 +11,14 @@ const reloadIcon = document.querySelector('.fa'); //the reload button at the top
 //DB variable 
 
 let DB;
+var addedItems;
+console.log(localStorage.getItem("Added Items"))
+if (localStorage.getItem("Added Items") != null) {
+    addedItems = parseInt(localStorage.getItem("Added Items"));
+}
+else {
+    addedItems = 0;
+}
 
 
 
@@ -62,31 +70,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     form.addEventListener('submit', addNewTask);
     sortAscending.addEventListener('click', sortAsc);
+    sortDescending.addEventListener('click', sortDsc);
     function sortAsc() {
-        dateArr = dateArr.sort();
-        console.log(dateArr);
-        let transaction = DB.transaction("tasks");
-        let objectStore = transaction.objectStore("tasks");
-        let dateIndex = objectStore.index('dateCreated');
-        //remove all items
+        //remove all items (Already Sorted)
+        displayTaskList();   
+    }
+    function sortDsc() {
         while (taskList.firstChild) {
             taskList.removeChild(taskList.firstChild);
         }
-        dateArr.forEach(date => {
-            let request = dateIndex.get(date);
-            request.onsuccess = function() {
-                let task = request.result;
+        let objectStore = DB.transaction('tasks').objectStore('tasks');
+        
+        let keyRange = IDBKeyRange.upperBound(addedItems);
+        let request = objectStore.openCursor(keyRange, "prev");
+        request.onsuccess = function(e) {
+            // assign the current cursor
+            let cursor = e.target.result;
+            console.log(addedItems);
+            if (cursor) {
+                // Create an li element when the user adds a task 
                 const li = document.createElement('li');
+                //add Attribute for delete 
+                li.setAttribute('data-task-id', cursor.value.id);
                 // Adding a class
                 li.className = 'collection-item';
                 // Create text node and append it
-                li.appendChild(document.createTextNode(task.taskName));
+                 
+                li.appendChild(document.createTextNode(cursor.value.taskName));
                 // Extract The Date from the database
                 const date = document.createElement('span');
                 date.style.position = "absolute";
                 date.style.left = "50%";
                 date.style.transform = "translateX(-50%)";
-                const dateData = task.dateCreated;
+                const dateData = cursor.value.dateCreated;
+                dateArr.push(dateData);
                 var year = dateData.getFullYear();
                 var month = dateData.getUTCMonth() + 1;
                 var day = dateData.getUTCDate();
@@ -96,12 +113,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 date.innerHTML = newDate;
 
                 li.appendChild(date);      
-                taskList.appendChild(li);    
+                
+                // Create new element for the link 
+                const link = document.createElement('a');
+                // Add class and the x marker for a 
+                link.className = 'delete-item secondary-content';
+                link.innerHTML = `
+                 <i class="fa fa-remove"></i>
+                &nbsp;
+                <a href="/Lesson 04 [Lab 06]/Finished/edit.html?id=${cursor.value.id}"><i class="fa fa-edit"></i> </a>
+                `;
+                // Append link to li
+                li.appendChild(link);
+                // Append to UL 
+                taskList.appendChild(li);
+                cursor.continue();
             }
-        });
-        
-        
-
+        }
     }
     function addNewTask(e) {
         e.preventDefault();
@@ -119,7 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
             this.taskName = taskName;
         }
         
-
+        addedItems++;
+        localStorage.setItem("Added Items", addedItems);
         // Insert the object into the database 
         let transaction = DB.transaction(['tasks'], 'readwrite');
         let objectStore = transaction.objectStore('tasks');
@@ -138,6 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
         transaction.onerror = () => {
             console.log('There was an error, try again!');
         }
+        console.log(addedItems);
 
     }
 
