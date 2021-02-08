@@ -5,10 +5,19 @@ const taskInput = document.querySelector('#task'); //the task input text field
 //read from q string 
 const urlParams = new URLSearchParams(window.location.search);
 const id = Number(urlParams.get('id'));
+var dateString = urlParams.get('date');
+dateString = dateString.slice(0, dateString.indexOf('G') - 1);
+
+const date = new Date(dateString);
+
+
+
+
+
 
 //DB
 var DB;
-var date;
+
 // Add Event Listener [on Load]
 document.addEventListener('DOMContentLoaded', () => {
     // create the database
@@ -19,7 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Database Ready');
         // save the result
         DB = TasksDB.result;
+        displayTask()
     }
+    
 
     function displayTask() {
         
@@ -73,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let objectStore = transaction.objectStore("tasks");
         
         
-        let request = objectStore.put(new Task(new Date(),taskInput.value,id));
+        let request = objectStore.put(new Task(date,taskInput.value,id));
         request.onsuccess = function() {
             console.log("Task Successfully updated");
         };
