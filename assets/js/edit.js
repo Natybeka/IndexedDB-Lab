@@ -5,39 +5,31 @@ const taskInput = document.querySelector('#task'); //the task input text field
 //read from q string 
 const urlParams = new URLSearchParams(window.location.search);
 const id = Number(urlParams.get('id'));
+
 //DB
 var DB;
-
+var date;
 // Add Event Listener [on Load]
 document.addEventListener('DOMContentLoaded', () => {
     // create the database
     let TasksDB = indexedDB.open('tasks', 1);
-
-    // if there's an error
-    TasksDB.onerror = function() {
-            console.log('There was an error');
-        }
-        // if everything is fine, assign the result to the instance
-    TasksDB.onsuccess = function() {
-        // console.log('Database Ready');
-
+     // display the Task 
+   
+    TasksDB.onsuccess =  function() {
+        console.log('Database Ready');
         // save the result
         DB = TasksDB.result;
-
-        // display the Task 
-        displayTask();
     }
 
-
     function displayTask() {
-
+        
         var transaction = DB.transaction(['tasks']);
         var objectStore = transaction.objectStore('tasks');
         var request = objectStore.get(id);
 
         request.onsuccess = function(event) {
             if (request.result) {
-                taskInput.value = request.result.taskname;
+                taskInput.value = request.result.taskName;
 
             } else {
                 console.log('No data record');
@@ -47,8 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
         request.onerror = function(event) {
             console.log('Transaction failed');
         };
-
-
 
     }
 
@@ -72,13 +62,22 @@ document.addEventListener('DOMContentLoaded', () => {
         2. Use the id on put method of index db
         
         */
-        let transaction = DB.transaction("tasks");
+
+        function Task(dateCreated, taskName, id) {
+            this.dateCreated = dateCreated;
+            this.taskName = taskName;
+            this.id = id;
+        }
+
+        let transaction = DB.transaction("tasks", 'readwrite');
         let objectStore = transaction.objectStore("tasks");
-        let request = objectStore.put(taskInput.value, id);
-        request.onsuccess() = function() {
+        
+        
+        let request = objectStore.put(new Task(new Date(),taskInput.value,id));
+        request.onsuccess = function() {
             console.log("Task Successfully updated");
         };
-        request.onerror() = function() {
+        request.onerror = function() {
             console.log("Task Not updated");
         }
         history.back();

@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var elems = document.querySelectorAll('.dropdown-trigger');
     M.Dropdown.init(elems, constrainWidth = false);
 
-    let dateArr = new Array();
+   
     // create the database
     let TasksDB = indexedDB.open('tasks', 1);
     let dayOfTheWeekMap = new Map();
@@ -60,7 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // create an object store, 
         // keypath is going to be the Indexes
-        let objectStore = db.createObjectStore('tasks',{autoIncrement: true });
+        let objectStore = db.createObjectStore('tasks',{keyPath:
+        'id'});
 
         // createindex: 1) field name 2) keypath 3) options
         objectStore.createIndex('dateCreated', 'dateCreated', {unique:true});
@@ -103,7 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 date.style.left = "50%";
                 date.style.transform = "translateX(-50%)";
                 const dateData = cursor.value.dateCreated;
-                dateArr.push(dateData);
                 var year = dateData.getFullYear();
                 var month = dateData.getUTCMonth() + 1;
                 var day = dateData.getUTCDate();
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 link.innerHTML = `
                  <i class="fa fa-remove"></i>
                 &nbsp;
-                <a href="/Lesson 04 [Lab 06]/Finished/edit.html?id=${cursor.value.id}"><i class="fa fa-edit"></i> </a>
+                <a href="edit.html?id=${cursor.value.id}"><i class="fa fa-edit"></i> </a>
                 `;
                 // Append link to li
                 li.appendChild(link);
@@ -142,31 +142,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // create a new object with the form info
-        function Task(dateCreated, taskName) {
+        function Task(dateCreated, taskName, id) {
             this.dateCreated = dateCreated;
             this.taskName = taskName;
+            this.id = id;
         }
         
-        addedItems++;
-        localStorage.setItem("Added Items", addedItems);
+        
+        
         // Insert the object into the database 
         let transaction = DB.transaction(['tasks'], 'readwrite');
         let objectStore = transaction.objectStore('tasks');
       
-        let request = objectStore.add(new Task(new Date(), taskInput.value));
+        let request = objectStore.add(new Task(new Date(), taskInput.value, ++addedItems));
 
         // on success
         request.onsuccess = () => {
+            
             form.reset();
         }
         transaction.oncomplete = () => {
             console.log('New appointment added');
-
+            
             displayTaskList();
         }
         transaction.onerror = () => {
             console.log('There was an error, try again!');
         }
+
+        //Update the local storage according to the number of tasks added
+        
+        localStorage.setItem("Added Items", addedItems);
         console.log(addedItems);
 
     }
@@ -201,7 +207,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 date.style.left = "50%";
                 date.style.transform = "translateX(-50%)";
                 const dateData = cursor.value.dateCreated;
-                dateArr.push(dateData);
                 var year = dateData.getFullYear();
                 var month = dateData.getUTCMonth() + 1;
                 var day = dateData.getUTCDate();
